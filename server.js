@@ -33,7 +33,7 @@ app.post("/upload", upload.single("file"), (req, res) => {
     let columns = {};
 
     headers.forEach((column, colIndex) => {
-      if (colIndex === 0) return;
+      if (colIndex === 0) return; // Skip the first column (candidate IDs)
       let presentCount = 0;
       let absentIds = [];
 
