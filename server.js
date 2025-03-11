@@ -3,12 +3,14 @@ const multer = require("multer");
 const xlsx = require("xlsx");
 const cors = require("cors");
 const fs = require("fs");
+const path = require("path");
 
 const app = express();
 const upload = multer({ dest: "uploads/" });
 
-app.use(cors({ origin: "*" })); // Allow all origins
+app.use(cors()); // Allow all origins
 app.use(express.json());
+app.use(express.static(path.join(__dirname, "public"))); // Serve static files
 
 app.post("/upload", upload.single("file"), (req, res) => {
   if (!req.file) {
@@ -16,17 +18,19 @@ app.post("/upload", upload.single("file"), (req, res) => {
   }
 
   try {
+    const filePath = req.file.path;
+
     // Ensure file exists before processing
-    if (!fs.existsSync(req.file.path)) {
+    if (!fs.existsSync(filePath)) {
       return res.status(400).json({ error: "Uploaded file not found" });
     }
 
-    const workbook = xlsx.readFile(req.file.path);
+    const workbook = xlsx.readFile(filePath);
     const sheetName = workbook.SheetNames[0];
     const worksheet = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1 });
 
     // Delete file after reading
-    fs.unlinkSync(req.file.path);
+    fs.unlinkSync(filePath);
 
     if (worksheet.length === 0) {
       return res.status(400).json({ error: "Uploaded file is empty" });
@@ -59,6 +63,10 @@ app.post("/upload", upload.single("file"), (req, res) => {
     console.error("Error processing file:", error);
     return res.status(500).json({ error: "Failed to process file", details: error.message });
   }
+});
+
+app.get("/Ashoka_Chakra.svg", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "Ashoka_Chakra.svg"));
 });
 
 const PORT = process.env.PORT || 5000;
