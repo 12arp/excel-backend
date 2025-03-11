@@ -16,11 +16,17 @@ app.post("/upload", upload.single("file"), (req, res) => {
   }
 
   try {
+    // Ensure file exists before processing
+    if (!fs.existsSync(req.file.path)) {
+      return res.status(400).json({ error: "Uploaded file not found" });
+    }
+
     const workbook = xlsx.readFile(req.file.path);
     const sheetName = workbook.SheetNames[0];
     const worksheet = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1 });
 
-    fs.unlinkSync(req.file.path); // Ensure file is deleted after processing
+    // Delete file after reading
+    fs.unlinkSync(req.file.path);
 
     if (worksheet.length === 0) {
       return res.status(400).json({ error: "Uploaded file is empty" });
@@ -48,10 +54,10 @@ app.post("/upload", upload.single("file"), (req, res) => {
       columns[column] = { present: presentCount, absent: absentIds };
     });
 
-    res.json({ total_candidates: totalCandidates, columns });
+    return res.status(200).json({ total_candidates: totalCandidates, columns });
   } catch (error) {
     console.error("Error processing file:", error);
-    res.status(500).json({ error: "Failed to process file" });
+    return res.status(500).json({ error: "Failed to process file", details: error.message });
   }
 });
 
